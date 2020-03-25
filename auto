@@ -1,0 +1,25 @@
+#!/usr/bin/dash
+# Switch to the first available profile.
+#
+# USAGE: auto [{profile-regex1} ...]
+
+cd -- "${XDG_CONFIG_HOME:-$HOME/.config}/xrandr"
+
+trap 'rm -- "$profiles"' INT TERM EXIT
+profiles=$(mktemp)
+./list >"$profiles"
+
+IFS='
+'
+for pat in "$@"; do
+  while read -r profile; do
+    case "$profile" in
+    $pat)
+      ./switch "$profile"
+      return $?
+      ;;
+    esac
+  done <"$profiles"
+done
+return 2
+# vi:ft=sh ts=2 sw=2 sts=2 et

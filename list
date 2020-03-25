@@ -1,0 +1,34 @@
+#!/usr/bin/dash -eu
+# List available profiles.
+#
+# USAGE: list
+#        list {profile} ...
+
+cd -- "${XDG_CONFIG_HOME:-$HOME/.config}/xrandr/profiles.d"
+
+displays=" $(xrandr -q | awk '
+"connected"==$2 {
+  printf "%s ",$1
+}')"
+
+if test $# = 0; then
+  set -- *
+fi
+for profile in "$@"; do
+  sed 's/\s--output/\n--output/' "$profile" |
+    awk "-vprofile=$profile" "-vdisplays=$displays" '
+{
+  ++n
+  if (index(displays,$2) == 0) {
+    n = -1
+    exit
+  }
+}
+END {
+  if (n >= 0)
+    printf "%s\t%d\n", profile, n
+}'
+done |
+  sort -t"$(printf '\t')" -srk2 |
+  cut -f1
+# vi:ft=sh ts=2 sw=2 sts=2 et

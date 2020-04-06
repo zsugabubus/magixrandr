@@ -11,7 +11,7 @@ profiles=$(mktemp)
 
 IFS='
 '
-for pat in "$@"; do
+for pat; do
   while read -r profile; do
     case "$profile" in
     $pat)

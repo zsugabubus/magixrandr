@@ -14,7 +14,7 @@ displays=" $(xrandr -q | awk '
 if test $# = 0; then
   set -- *
 fi
-for profile in "$@"; do
+for profile; do
   sed 's/\s--output/\n--output/' "$profile" |
     awk "-vprofile=$profile" "-vdisplays=$displays" '
 {

@@ -22,7 +22,7 @@ usrcfg=$(mktemp)
 
 xrandr -q \
 | awk '
-"connected"==$2 {
+$2~/^(dis)?connected$/ {
   print "--output", $1, "--off"
 }' \
 | sort -k2 >"$offcfg"

@@ -1,25 +1,15 @@
 #!/usr/bin/dash
 # Switch to the first available profile.
 #
-# USAGE: auto [{profile-regex1} ...]
+# USAGE: auto [{profile-regex} ...]
 
 cd -- "${XDG_CONFIG_HOME:-$HOME/.config}/xrandr"
 
-trap 'rm -- "$profiles"' INT TERM EXIT
-profiles=$(mktemp)
-./list >"$profiles"
+profiles=$(./list)
 
-IFS='
-'
 for pat; do
-  while read -r profile; do
-    case "$profile" in
-    $pat)
-      ./switch "$profile"
-      return $?
-      ;;
-    esac
-  done <"$profiles"
+  profile=$(printf %s "$profiles" | grep -sm 1 "$pat") &&
+  exec ./switch "$profile"
 done
 return 2
-# vi:ft=sh ts=2 sw=2 sts=2 et
+# vim:ft=sh

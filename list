@@ -31,4 +31,4 @@ END {
 done |
   sort -t"$(printf '\t')" -srk2 |
   cut -f1
-# vi:ft=sh ts=2 sw=2 sts=2 et
+# vim:ft=sh

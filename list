@@ -6,14 +6,22 @@
 
 cd -- "${XDG_CONFIG_HOME:-$HOME/.config}/xrandr/profiles.d"
 
+# treat first output disconnected when lid closed (assume that the first one is
+# the builtin)
+if grep -sx 'state:\s*close' /proc/acpi/button/lid/*/state; then
+  ignore=$(xrandr -q | awk '$2~/connected$/ { print $1; exit }')
+fi
+
+# gather connected outputs
 connected=$(
   xrandr -q |
-  awk -vORS=' ' '
-  "connected" == $2 {
+  awk -vORS=' ' -vignore="${ignore:-}" '
+  "connected" == $2 && ignore != $1 {
     print $1
   }'
 )
 
+# list profiles which has all outputs connected
 awk -vRS='--output[ \t\n]+' \
     -vconnected="$connected" '
 !NF {

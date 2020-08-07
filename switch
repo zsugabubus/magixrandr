@@ -11,13 +11,16 @@ for f in preswitch.d/*; do
 done
 
 if test $# = 1; then
-  profile="$1"
+  profile=$1
 fi
 
 {
   # switch all output off
   xrandr -q |
-  awk '$2~/connected$/ { printf "--output %s --off\n", $1 }'
+  awk '
+  $2~/connected$/ {
+    printf "--output %s --off\n", $1
+  }'
 
   # read user config
   if test -n "$profile"; then
@@ -27,8 +30,13 @@ fi
   fi
 } |
 awk -vRS='--output[ \t\n]+' '
-NF { O[$1] = $0 }
-END { for (o in O) print "--output " O[o] }' |
+NF {
+  O[$1] = $0
+}
+END {
+  for (o in O)
+    print "--output " O[o]
+}' |
 xargs xrandr ||
 xrandr --auto
 

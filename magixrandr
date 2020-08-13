@@ -1,0 +1,105 @@
+#!/bin/dash -eu
+# Licensed under the WTFPL.
+# Author: zsugabubus.
+{
+	cd -- "$HOME/.magixrandr" ||
+	cd -- "${XDG_CONFIG_HOME:-$HOME/.config}/magixrandr" ||:
+} 2>/dev/null
+
+subcommand=${1?Missing subcommand.}
+shift
+case "$subcommand" in
+(switch) # [{PROFILE} | {xrandr-args} ...]
+	# Configure outputs.
+
+	for f in preswitch.d/*; do
+	  [ ! -x "$f" ] || "$f"
+	done
+
+	if test $# = 1; then
+	  profile=$1
+	fi
+
+	{
+		# Switch off all output.
+		xrandr -q |
+		awk '
+		$2~/connected$/ {
+			printf "--output %s --off\n", $1
+		}'
+
+		# Read user config or use arguments.
+		if test -n "$profile"; then
+			cat "profiles.d/$profile"
+		else
+			printf '%s\n' "$@"
+		fi
+	} |
+	awk -vRS='--output[ \t\n]+' '
+	NF {
+		O[$1] = $0
+	}
+	END {
+		for (o in O)
+			print "--output " O[o]
+	}' |
+	xargs xrandr ||
+	xrandr --auto
+
+	for f in postswitch.d/*; do
+		[ ! -x "$f" ] || "$f" "${profile:-}"
+	done
+	;;
+
+(auto) # [{PROFILE-PATTERN} ...]
+	# Switch to the first available profile.
+
+	profiles=$(exec "$0" list)
+
+	for pat; do
+		profile=$(printf %s "$profiles" | grep -sm 1 "$pat") &&
+		exec "$0" switch "$profile"
+	done
+	return 2
+	;;
+
+(list) # [{PROFILE} ...]
+	# List available profiles.
+	cd profiles.d
+
+	# Treat first output disconnected when lid closed (assume that the first one is
+	# the builtin).
+	if grep -sx 'state:\s*close' /proc/acpi/button/lid/*/state; then
+		ignore=$(xrandr -q | awk '$2~/connected$/ { print $1; exit }')
+	fi
+
+	# Gather connected outputs.
+	connected=$(
+		xrandr -q |
+		awk -vORS=' ' -vignore="${ignore:-}" '
+		"connected" == $2 && ignore != $1 {
+			print $1
+		}'
+	)
+
+	# List profiles which has all outputs connected and sort by number of
+	# outputs.
+	awk -vRS='--output[ \t\n]+' \
+	    -vconnected="$connected" '
+	!NF {
+		P[FILENAME] = 0
+	}
+	NF {
+		if (index(connected, $1) == 0)
+			delete P[FILENAME]
+		else if (FILENAME in P)
+			++P[FILENAME]
+	}
+	END {
+	  for (p in P)
+	    print P[p], p
+	}' ${@:-*} |
+	sort -t' ' -nsr |
+	cut -d' ' -f2-
+	;;
+esac

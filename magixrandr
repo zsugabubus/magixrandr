@@ -29,7 +29,7 @@ case "$subcommand" in
 		}'
 
 		# Read user config or use arguments.
-		if test -n "$profile"; then
+		if test -n "${profile:-}"; then
 			cat "profiles.d/$profile"
 		else
 			printf '%s\n' "$@"
@@ -57,7 +57,7 @@ case "$subcommand" in
 	profiles=$(exec "$0" list)
 
 	for pat; do
-		profile=$(printf %s "$profiles" | grep -sm 1 "$pat") &&
+		profile=$(printf %s "$profiles" | grep -xsm 1 "$pat") &&
 		exec "$0" switch "$profile"
 	done
 	return 2

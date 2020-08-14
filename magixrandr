@@ -102,4 +102,9 @@ case "$subcommand" in
 	sort -t' ' -nsr |
 	cut -d' ' -f2-
 	;;
+
+(list-all)
+	cd profiles.d
+	printf '%s\n' *
+	;;
 esac

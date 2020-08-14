@@ -1,0 +1,44 @@
+#compdef magixrandr
+
+function _magixrandr_profiles() {
+	local profiles=( "${(@f)$(magixrandr list$1)}" )
+	_describe -t profiles 'profile' profiles
+}
+
+_arguments \
+	'1:subcommands:((
+		switch\:"switch to profile or realize XRandR configuration"
+		list\:"list available profiles"
+		list-all\:"list all profiles"
+		auto\:"switch to first matching available profile"
+	))' \
+	'*: :->args'
+
+case $state in
+(args)
+	case $line[1] in
+	(switch)
+		if (( CURRENT == 3 )); then
+			_magixrandr_profiles
+		elif [[ ${words[3]} =~ ^[^-] ]]; then
+			_message 'no more arguments'
+			return
+		fi
+		words[1,2]=xrandr
+		(( CURRENT-- ))
+		_xrandr
+		;;
+	(auto)
+		_alternative \
+			':: _message -e pattern' \
+			':: _magixrandr_profiles -all'
+		;;
+	(list)
+		_magixrandr_profiles -all
+		;;
+	(list-all)
+		_message 'no more arguments'
+		;;
+	esac
+	;;
+esac

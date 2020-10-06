@@ -99,7 +99,7 @@ case "$subcommand" in
 	  for (p in P)
 	    print P[p], p
 	}' ${@:-*} |
-	sort -t' ' -nsr |
+	sort -t' ' -k 1nr,2f |
 	cut -d' ' -f2-
 	;;
 

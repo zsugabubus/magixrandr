@@ -6,10 +6,21 @@
 	cd -- "${XDG_CONFIG_HOME:-$HOME/.config}/magixrandr" ||:
 } 2>/dev/null
 
+fingerprint() {
+	echo -n hash-
+	for output in /sys/class/drm/card0-*; do
+		read status <"$output/status";
+		if test "$status" = connected; then
+			printf '%s' "$output"
+			cat "$output/edid";
+		fi
+	done | sha1sum | cut -c-6
+}
+
 subcommand=${1?Missing subcommand.}
 shift
 case "$subcommand" in
-(switch) # [{PROFILE} | {xrandr-args} ...]
+(switch) # [ PROFILE | xrandr-args... ]
 	# Configure outputs.
 
 	for f in preswitch.d/*; do
@@ -51,7 +62,7 @@ case "$subcommand" in
 	done
 	;;
 
-(auto) # [{PROFILE-PATTERN} ...]
+(auto) # [ PROFILE-PATTERN... ]
 	# Switch to the first available profile.
 
 	profiles=$(exec "$0" list)
@@ -63,7 +74,7 @@ case "$subcommand" in
 	return 2
 	;;
 
-(list) # [{PROFILE} ...]
+(list) # [ PROFILE... ]
 	# List available profiles.
 	cd profiles.d
 
@@ -85,12 +96,16 @@ case "$subcommand" in
 	# List profiles which has all outputs connected and sort by number of
 	# outputs.
 	awk -vRS='--output[ \t\n]+' \
+	    -vfingerprint="$(fingerprint)" \
 	    -vconnected="$connected" '
 	!NF {
 		P[FILENAME] = 0
 	}
 	NF {
-		if (index(connected, $1) == 0)
+		/* Only allow hash-* profile if it matches current configuration. */
+		if (FILENAME ~ "^hash-" && FILENAME != fingerprint)
+			delete P[FILENAME]
+		else if (index(connected, $1) == 0)
 			delete P[FILENAME]
 		else if (FILENAME in P)
 			++P[FILENAME]
@@ -104,7 +119,14 @@ case "$subcommand" in
 	;;
 
 (list-all)
+	# List all profiles.
 	cd profiles.d
 	printf '%s\n' *
+	;;
+
+(fingerprint) # PROFILE
+	# Create fingerprinted profile.
+	cd profiles.d
+	ln -rsf "${1?Missing profile name.}" "$(fingerprint)"
 	;;
 esac

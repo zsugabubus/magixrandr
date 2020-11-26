@@ -11,6 +11,7 @@ _arguments \
 		list\:"list available profiles"
 		list-all\:"list all profiles"
 		auto\:"switch to first matching available profile"
+		fingerprint\:"create fingerprinted profile"
 	))' \
 	'*: :->args'
 
@@ -38,6 +39,9 @@ case $state in
 		;;
 	(list-all)
 		_message 'no more arguments'
+		;;
+	(fingerprint)
+		_magixrandr_profiles
 		;;
 	esac
 	;;
